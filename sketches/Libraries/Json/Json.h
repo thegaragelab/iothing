@@ -26,16 +26,54 @@ typedef struct {
   int      size;  /* Number of child (nested) tokens */
   } JsonToken;
 
+typedef enum {
+  JsonErrorNoMemory    = -1, // Not enough tokens to finish parsing
+  JsonErrorInvalidChar = -2, // Invalid character in JSON string
+  JsonErrorPartial     = -3  // Incomplete JSON data
+  } JsonError;
+
 /** Parser for JSON content
  */
 class JsonParser {
+  private:
+    unsigned int m_pos;       // offset in the JSON string
+    unsigned int m_toknext;   // next token to allocate
+    int          m_toksuper;  // superior token node, e.g parent object or array
+    JsonToken   *m_pTokens;   // Array of tokens to use
+    int          m_tokens;    // Number of available tokens
+    const char  *m_cszSource; // Json source data
+
+  protected:
+    /** Allocate (and initialise) a new token
+     *
+     * @return a pointer to the token or NULL if we have run out of memory
+     */
+    JsonToken *AllocToken();
+
+    /** Parse a primitive from the current position in the source
+     *
+     * Looks for a primitive (boolean, null and numbers) and adds the appropriate
+     * token.
+     *
+     * @return 0 on success, error code on failure
+     */
+    int ParsePrimitive();
+
+    /** Parse a quoted string from the current position in the source
+     *
+     * Looks for a quoted string and adds the appropriate token.
+     *
+     * @return 0 on success, error code on failure
+     */
+    int ParseString();
+
   public:
-    /** Initialise the parser with space to keep tokens
+    /** Initialise the parser with the token pool to use.
      *
      * @param pTokens pointer to an array of JsonToken structures
      * @param tokens the maximum number of tokens that can be stored.
      */
-    void begin(JsonToken *pTokens, int tokens);
+    JsonParser(JsonToken *pTokens, int tokens);
 
     /** Parse JSON from a string buffer in memory
      *
@@ -138,6 +176,17 @@ class JsonBuilder {
      */
     bool beginObject(const char *cszName);
 
+    /** Add a new child object to the current list
+     *
+     * Adds a new field to the current list that will contain a child
+     * object. Future calls to addXXX(name, value) will add fields to the
+     * child object.
+     *
+     * @return true on success, false if the buffer is full or the operation
+     *         is not available in the current state.
+     */
+    bool beginObject();
+
     /** End the current child object
      *
      * @return true on success, false if the buffer is full or the operation
@@ -153,6 +202,13 @@ class JsonBuilder {
      *         is not available in the current state.
      */
     bool beginArray(const char *cszName);
+
+    /** Add a new child array to the current array
+     *
+     * @return true on success, false if the buffer is full or the operation
+     *         is not available in the current state.
+     */
+    bool beginArray();
 
     /** End the current child array
      *
