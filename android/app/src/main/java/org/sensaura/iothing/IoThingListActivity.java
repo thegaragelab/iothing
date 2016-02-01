@@ -14,11 +14,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
-
-import org.sensaura.iothing.dummy.DummyContent;
-
 import java.util.List;
+import org.sensaura.iothing.model.*;
 
 /**
  * An activity representing a list of IoThings. This activity
@@ -68,15 +65,16 @@ public class IoThingListActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
-        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(DummyContent.ITEMS));
+        IoThingApplication app = (IoThingApplication)getApplication();
+        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(app.Things));
     }
 
     public class SimpleItemRecyclerViewAdapter
             extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
 
-        private final List<DummyContent.DummyItem> mValues;
+        private final List<IoThing> mValues;
 
-        public SimpleItemRecyclerViewAdapter(List<DummyContent.DummyItem> items) {
+        public SimpleItemRecyclerViewAdapter(List<IoThing> items) {
             mValues = items;
         }
 
@@ -124,7 +122,7 @@ public class IoThingListActivity extends AppCompatActivity {
             public final View mView;
             public final TextView mIdView;
             public final TextView mContentView;
-            public DummyContent.DummyItem mItem;
+            public IoThing mItem;
 
             public ViewHolder(View view) {
                 super(view);
