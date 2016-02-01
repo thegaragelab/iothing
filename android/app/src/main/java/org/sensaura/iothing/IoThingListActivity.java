@@ -26,115 +26,130 @@ import org.sensaura.iothing.model.*;
  * item details side-by-side using two vertical panes.
  */
 public class IoThingListActivity extends AppCompatActivity {
+  /**
+   * Whether or not the activity is in two-pane mode, i.e. running on a tablet
+   * device.
+   */
+  private boolean mTwoPane;
 
-    /**
-     * Whether or not the activity is in two-pane mode, i.e. running on a tablet
-     * device.
-     */
-    private boolean mTwoPane;
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_iothing_list);
+
+    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+    setSupportActionBar(toolbar);
+    toolbar.setTitle(getTitle());
+
+    FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+    fab.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+        }
+      });
+
+    View recyclerView = findViewById(R.id.iothing_list);
+    assert recyclerView != null;
+    setupRecyclerView((RecyclerView) recyclerView);
+
+    if (findViewById(R.id.iothing_detail_container) != null) {
+      // The detail container view will be present only in the
+      // large-screen layouts (res/values-w900dp).
+      // If this view is present, then the
+      // activity should be in two-pane mode.
+      mTwoPane = true;
+      }
+    }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    // Start device discovery
+    IoThingApplication.getInstance().discoverThings(true);
+    }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    // Stop the device discovery
+    IoThingApplication.getInstance().discoverThings(false);
+    }
+
+  private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
+      IoThingApplication app = (IoThingApplication)getApplication();
+      recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(app.Things));
+      }
+
+  /** Adapter for the list view
+   *
+   */
+  public class SimpleItemRecyclerViewAdapter extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
+
+    private final List<IoThing> mValues;
+
+    public SimpleItemRecyclerViewAdapter(List<IoThing> items) {
+      mValues = items;
+      }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_iothing_list);
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+      View view = LayoutInflater.from(parent.getContext())
+              .inflate(R.layout.iothing_list_content, parent, false);
+      return new ViewHolder(view);
+      }
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        toolbar.setTitle(getTitle());
+    @Override
+    public void onBindViewHolder(final ViewHolder holder, int position) {
+      holder.mItem = mValues.get(position);
+      holder.mIdView.setText(mValues.get(position).id);
+      holder.mContentView.setText(mValues.get(position).content);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+      holder.mView.setOnClickListener(new View.OnClickListener() {
+          @Override
+          public void onClick(View v) {
+            if (mTwoPane) {
+              Bundle arguments = new Bundle();
+              arguments.putString(IoThingDetailFragment.ARG_ITEM_ID, holder.mItem.id);
+              IoThingDetailFragment fragment = new IoThingDetailFragment();
+              fragment.setArguments(arguments);
+              getSupportFragmentManager().beginTransaction()
+                      .replace(R.id.iothing_detail_container, fragment)
+                      .commit();
+              }
+            else {
+              Context context = v.getContext();
+              Intent intent = new Intent(context, IoThingDetailActivity.class);
+              intent.putExtra(IoThingDetailFragment.ARG_ITEM_ID, holder.mItem.id);
+
+              context.startActivity(intent);
+              }
             }
         });
+      }
 
-        View recyclerView = findViewById(R.id.iothing_list);
-        assert recyclerView != null;
-        setupRecyclerView((RecyclerView) recyclerView);
+    @Override
+    public int getItemCount() {
+      return mValues.size();
+      }
 
-        if (findViewById(R.id.iothing_detail_container) != null) {
-            // The detail container view will be present only in the
-            // large-screen layouts (res/values-w900dp).
-            // If this view is present, then the
-            // activity should be in two-pane mode.
-            mTwoPane = true;
-        }
+    public class ViewHolder extends RecyclerView.ViewHolder {
+      public final View mView;
+      public final TextView mIdView;
+      public final TextView mContentView;
+      public IoThing mItem;
+
+      public ViewHolder(View view) {
+        super(view);
+        mView = view;
+        mIdView = (TextView) view.findViewById(R.id.id);
+        mContentView = (TextView) view.findViewById(R.id.content);
+      }
+
+      @Override
+      public String toString() {
+        return super.toString() + " '" + mContentView.getText() + "'";
+      }
     }
-
-    private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
-        IoThingApplication app = (IoThingApplication)getApplication();
-        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(app.Things));
-    }
-
-    public class SimpleItemRecyclerViewAdapter
-            extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
-
-        private final List<IoThing> mValues;
-
-        public SimpleItemRecyclerViewAdapter(List<IoThing> items) {
-            mValues = items;
-        }
-
-        @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.iothing_list_content, parent, false);
-            return new ViewHolder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(final ViewHolder holder, int position) {
-            holder.mItem = mValues.get(position);
-            holder.mIdView.setText(mValues.get(position).id);
-            holder.mContentView.setText(mValues.get(position).content);
-
-            holder.mView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mTwoPane) {
-                        Bundle arguments = new Bundle();
-                        arguments.putString(IoThingDetailFragment.ARG_ITEM_ID, holder.mItem.id);
-                        IoThingDetailFragment fragment = new IoThingDetailFragment();
-                        fragment.setArguments(arguments);
-                        getSupportFragmentManager().beginTransaction()
-                                .replace(R.id.iothing_detail_container, fragment)
-                                .commit();
-                    } else {
-                        Context context = v.getContext();
-                        Intent intent = new Intent(context, IoThingDetailActivity.class);
-                        intent.putExtra(IoThingDetailFragment.ARG_ITEM_ID, holder.mItem.id);
-
-                        context.startActivity(intent);
-                    }
-                }
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return mValues.size();
-        }
-
-        public class ViewHolder extends RecyclerView.ViewHolder {
-            public final View mView;
-            public final TextView mIdView;
-            public final TextView mContentView;
-            public IoThing mItem;
-
-            public ViewHolder(View view) {
-                super(view);
-                mView = view;
-                mIdView = (TextView) view.findViewById(R.id.id);
-                mContentView = (TextView) view.findViewById(R.id.content);
-            }
-
-            @Override
-            public String toString() {
-                return super.toString() + " '" + mContentView.getText() + "'";
-            }
-        }
-    }
+  }
 }
