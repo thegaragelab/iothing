@@ -4,6 +4,7 @@ package org.sensaura.iothing.model;
 import android.app.Application;
 import android.net.nsd.*;
 import android.content.Context;
+import android.util.Log;
 
 import java.util.*;
 
@@ -26,14 +27,29 @@ public class IoThingApplication extends Application {
   //-------------------------------------------------------------------------
 
   private class ServiceListener implements NsdManager.DiscoveryListener {
+    static private final String TAG = "ServiceListener";
+
     //--- Instance variables
-    private boolean m_discovering; //!< True if we are in discovery mode
+    private boolean                    m_discovering; //!< True if we are in discovery mode
+    private NsdManager.ResolveListener m_resolver;    //!< Handler service resolution
 
     /** Constructor
      *
      */
     public ServiceListener() {
       m_discovering = false;
+      m_resolver = new NsdManager.ResolveListener() {
+        @Override
+        public void onResolveFailed(NsdServiceInfo serviceInfo, int errorCode) {
+          // Called when the resolve fails.  Use the error code to debug.
+          Log.e(TAG, "Resolve failed" + errorCode);
+          }
+
+        @Override
+        public void onServiceResolved(NsdServiceInfo serviceInfo) {
+          Log.e(TAG, "Resolve Succeeded. " + serviceInfo);
+          }
+        };
       }
 
     /** Invoked when discovery is started
@@ -42,6 +58,7 @@ public class IoThingApplication extends Application {
      */
     @Override
     public void onDiscoveryStarted(String serviceType) {
+      Log.d(TAG, "Starting service discovery.");
       m_discovering = true;
       }
 
@@ -51,6 +68,7 @@ public class IoThingApplication extends Application {
      */
     @Override
     public void onDiscoveryStopped(String serviceType) {
+      Log.d(TAG, "Stopping service discovery");
       m_discovering = false;
       }
 
@@ -60,7 +78,9 @@ public class IoThingApplication extends Application {
      */
     @Override
     public void onServiceFound(NsdServiceInfo serviceInfo) {
-
+      Log.d(TAG, "Service discovered");
+      NsdManager nsdManager = (NsdManager)IoThingApplication.getInstance().getSystemService(Context.NSD_SERVICE);
+      nsdManager.resolveService(serviceInfo, m_resolver);
       }
 
     /** Invoked when a service is no longer available
@@ -69,17 +89,20 @@ public class IoThingApplication extends Application {
      */
     @Override
     public void onServiceLost(NsdServiceInfo serviceInfo) {
-
+      // TODO: Remove service
       }
 
     @Override
     public void onStartDiscoveryFailed(String serviceType, int errorCode) {
-
+      Log.e(TAG, "Failed to start discovery");
+      m_discovering = false;
       }
+
 
     @Override
     public void onStopDiscoveryFailed(String serviceType, int errorCode) {
-
+      Log.e(TAG, "Failed to stop discovery");
+      m_discovering = false;
       }
 
     //-----------------------------------------------------------------------
