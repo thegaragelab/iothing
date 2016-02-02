@@ -3,7 +3,7 @@
     package="org.sensaura.iothing">
 
     <uses-permission android:name="android.permission.INTERNET"/>
-    
+
     <application
         android:name=".model.IoThingApplication"
         android:allowBackup="true"
