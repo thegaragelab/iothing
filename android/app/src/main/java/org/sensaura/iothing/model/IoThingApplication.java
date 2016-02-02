@@ -102,21 +102,13 @@ public class IoThingApplication extends Application {
   // Public access to devices for UI binding
   //-------------------------------------------------------------------------
 
-  /** The list of available IoThing instances
+  /** The collection of available IoThing instances
    */
-  public static final List<IoThing> Things = new ArrayList<>();
+  public static final DynamicCollection<IoThing> Things = new DynamicCollection<>();
 
-  /** Map of ID to IoThing instance
+  /** The collection of available IoThingDevice instances
    */
-  public static final Map<String, IoThing> ThingMap = new HashMap<>();
-
-  /** List of available IoThingDevice instances
-   */
-  public static final List<IoThingDevice> Devices = new ArrayList<>();
-
-  /** Map of ID to IoThingDevice instance
-   */
-  public static final Map<String, IoThingDevice> DeviceMap = new HashMap<>();
+  public static final DynamicCollection<IoThingDevice> Devices = new DynamicCollection<>();
 
   //-------------------------------------------------------------------------
   // Application life cycle management

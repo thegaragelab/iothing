@@ -45,7 +45,7 @@ public class IoThingDetailFragment extends Fragment {
             // arguments. In a real-world scenario, use a Loader
             // to load content from a content provider.
             IoThingApplication app = IoThingApplication.getInstance();
-            mItem = app.ThingMap.get(getArguments().getString(ARG_ITEM_ID));
+            mItem = app.Things.get(getArguments().getString(ARG_ITEM_ID));
 
             Activity activity = this.getActivity();
             CollapsingToolbarLayout appBarLayout = (CollapsingToolbarLayout) activity.findViewById(R.id.toolbar_layout);

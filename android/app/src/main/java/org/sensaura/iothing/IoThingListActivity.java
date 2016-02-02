@@ -14,7 +14,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import java.util.List;
+
+import java.util.*;
+
 import org.sensaura.iothing.model.*;
 
 /**
@@ -84,11 +86,11 @@ public class IoThingListActivity extends AppCompatActivity {
   /** Adapter for the list view
    *
    */
-  public class SimpleItemRecyclerViewAdapter extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
+  public class SimpleItemRecyclerViewAdapter extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> implements Observer {
 
-    private final List<IoThing> mValues;
+    private final DynamicCollection<IoThing> mValues;
 
-    public SimpleItemRecyclerViewAdapter(List<IoThing> items) {
+    public SimpleItemRecyclerViewAdapter(DynamicCollection<IoThing> items) {
       mValues = items;
       }
 
@@ -101,9 +103,9 @@ public class IoThingListActivity extends AppCompatActivity {
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
-      holder.mItem = mValues.get(position);
-      holder.mIdView.setText(mValues.get(position).id);
-      holder.mContentView.setText(mValues.get(position).content);
+      holder.mItem = mValues.Items.get(position);
+      holder.mIdView.setText(mValues.Items.get(position).getID());
+      holder.mContentView.setText(mValues.Items.get(position).content);
 
       holder.mView.setOnClickListener(new View.OnClickListener() {
           @Override
@@ -130,7 +132,24 @@ public class IoThingListActivity extends AppCompatActivity {
 
     @Override
     public int getItemCount() {
-      return mValues.size();
+      return mValues.Items.size();
+      }
+
+    @Override
+    public void onAttachedToRecyclerView(RecyclerView recyclerView) {
+      super.onAttachedToRecyclerView(recyclerView);
+      mValues.addObserver(this);
+      }
+
+    @Override
+    public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
+      super.onDetachedFromRecyclerView(recyclerView);
+      mValues.deleteObserver(this);
+      }
+
+    @Override
+    public void update(Observable observable, Object data) {
+      notifyDataSetChanged();
       }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
