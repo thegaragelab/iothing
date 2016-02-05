@@ -105,14 +105,14 @@ public class IoThingListActivity extends AppCompatActivity {
     public void onBindViewHolder(final ViewHolder holder, int position) {
       holder.mItem = mValues.Items.get(position);
       holder.mIdView.setText(mValues.Items.get(position).getID());
-      holder.mContentView.setText(mValues.Items.get(position).content);
+      holder.mContentView.setText(mValues.Items.get(position).getName());
 
       holder.mView.setOnClickListener(new View.OnClickListener() {
           @Override
           public void onClick(View v) {
             if (mTwoPane) {
               Bundle arguments = new Bundle();
-              arguments.putString(IoThingDetailFragment.ARG_ITEM_ID, holder.mItem.id);
+              arguments.putString(IoThingDetailFragment.ARG_ITEM_ID, holder.mItem.getID());
               IoThingDetailFragment fragment = new IoThingDetailFragment();
               fragment.setArguments(arguments);
               getSupportFragmentManager().beginTransaction()
@@ -122,7 +122,7 @@ public class IoThingListActivity extends AppCompatActivity {
             else {
               Context context = v.getContext();
               Intent intent = new Intent(context, IoThingDetailActivity.class);
-              intent.putExtra(IoThingDetailFragment.ARG_ITEM_ID, holder.mItem.id);
+              intent.putExtra(IoThingDetailFragment.ARG_ITEM_ID, holder.mItem.getID());
 
               context.startActivity(intent);
               }

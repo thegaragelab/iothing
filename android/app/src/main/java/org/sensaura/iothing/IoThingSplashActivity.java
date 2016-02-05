@@ -20,7 +20,7 @@ public class IoThingSplashActivity extends AppCompatActivity implements Observer
     setContentView(R.layout.activity_io_thing_splash);
     // See if WiFi is available
     Log.d(TAG, "Checking current WiFi state.");
-    if (IoThingApplication.Network.isConnected())
+//    if (IoThingApplication.Network.isConnected())
       launchMainActivity(1000);
     }
 

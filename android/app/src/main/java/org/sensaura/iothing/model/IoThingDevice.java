@@ -10,8 +10,8 @@ public class IoThingDevice extends IoThing {
    *
    * @param id
    */
-  public IoThingDevice(String id, String content, String details) {
-    super(id, content, details);
+  public IoThingDevice(String id, String name) {
+    super(false, id, name);
     }
 
   @Override

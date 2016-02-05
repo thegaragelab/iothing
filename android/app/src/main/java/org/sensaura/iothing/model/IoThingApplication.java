@@ -129,6 +129,9 @@ public class IoThingApplication extends Application {
         WifiManager wifi = (WifiManager) c.getSystemService(Context.WIFI_SERVICE);
         List<ScanResult> mScanResults = wifi.getScanResults();
         Log.d(TAG, "Got WiFi scan results.");
+        for (ScanResult result : mScanResults) {
+          Log.d(TAG, String.format("Found network '%s'", result.SSID));
+          }
         }
       else if (intent.getAction() == ConnectivityManager.CONNECTIVITY_ACTION) {
         // Connection state changed
