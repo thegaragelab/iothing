@@ -2,8 +2,10 @@ package org.sensaura.iothing.model;
 
 //--- Imports
 import android.app.Application;
+import android.net.*;
 import android.net.nsd.*;
-import android.content.Context;
+import android.net.wifi.*;
+import android.content.*;
 import android.util.Log;
 
 import java.util.*;
@@ -13,6 +15,7 @@ import java.util.*;
  * Use this to provide the model.
  */
 public class IoThingApplication extends Application {
+  private static final String TAG = "IoThingApplication";
   private static final String IOTHING_SERVICE = "_iothing._tcp";
 
   /* Provide a static method of acquiring the application instance
@@ -22,10 +25,8 @@ public class IoThingApplication extends Application {
     return m_instance;
     }
 
-  //-------------------------------------------------------------------------
-  // Service listener helper class
-  //-------------------------------------------------------------------------
-
+  /** Helper class to handler service discovery
+   */
   private class ServiceListener implements NsdManager.DiscoveryListener {
     static private final String TAG = "ServiceListener";
 
@@ -118,8 +119,29 @@ public class IoThingApplication extends Application {
       }
   }
 
+  /** Helper class to handler access point discovery
+   */
+  private class NetworkEventReceiver extends BroadcastReceiver {
+    @Override
+    public void onReceive(Context c, Intent intent) {
+      if (intent.getAction() == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) {
+        // Get and process scan results
+        WifiManager wifi = (WifiManager) c.getSystemService(Context.WIFI_SERVICE);
+        List<ScanResult> mScanResults = wifi.getScanResults();
+        Log.d(TAG, "Got WiFi scan results.");
+        }
+      else if (intent.getAction() == ConnectivityManager.CONNECTIVITY_ACTION) {
+        // Connection state changed
+        IoThingApplication.Network.updateState();
+        }
+      }
+    }
+
   //--- Instance variables
-  private ServiceListener m_serviceListener;
+  private ServiceListener      m_serviceListener;
+  private NetworkEventReceiver m_networkEventReceiver;
+  private IntentFilter         m_intentFilter;
+  private boolean              m_wifiConnected;
 
   //-------------------------------------------------------------------------
   // Public access to devices for UI binding
@@ -129,9 +151,10 @@ public class IoThingApplication extends Application {
    */
   public static final DynamicCollection<IoThing> Things = new DynamicCollection<>();
 
-  /** The collection of available IoThingDevice instances
+  /** The current WiFi connection state
+   *
    */
-  public static final DynamicCollection<IoThingDevice> Devices = new DynamicCollection<>();
+  public static final WiFiConnection Network = new WiFiConnection();
 
   //-------------------------------------------------------------------------
   // Application life cycle management
@@ -139,11 +162,18 @@ public class IoThingApplication extends Application {
 
   /** Application creation
    *
-   * This simply stores a reference to the singleton.
+   * Store a reference to the singleton instance and set up state.
    */
   public void onCreate() {
     super.onCreate();
-    this.m_instance = this;
+    Log.d(TAG, "Creating application singleton.");
+    m_instance = this;
+    m_intentFilter = new IntentFilter();
+    m_intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+    m_intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+    // Get current WiFi state
+    Log.d(TAG, "Getting current WiFi state.");
+    Network.updateState();
     }
 
   //-------------------------------------------------------------------------
@@ -157,23 +187,31 @@ public class IoThingApplication extends Application {
    * @return true on success, false on failure
    */
   public boolean discoverThings(boolean enabled) {
-    // Make sure we have a service listener available
+    // Make sure we have a service listener and access point receiver available
     synchronized (this) {
       if (m_serviceListener == null)
         m_serviceListener = new ServiceListener();
+      if (m_networkEventReceiver == null)
+        m_networkEventReceiver = new NetworkEventReceiver();
       }
-    // Get the discovery manager
+    // Get the discovery manager and WiFiManager
     NsdManager nsdManager = (NsdManager)getSystemService(Context.NSD_SERVICE);
     if (nsdManager == null)
+      return false;
+    WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+    if (wifiManager == null)
       return false;
     // Change the discovery state
     if (enabled && !m_serviceListener.isDiscovering()) {
       // Start the discovery process
       nsdManager.discoverServices(IOTHING_SERVICE, NsdManager.PROTOCOL_DNS_SD, m_serviceListener);
+      registerReceiver(m_networkEventReceiver, m_intentFilter);
+      wifiManager.startScan();
       }
     else if (m_serviceListener.isDiscovering() && !enabled) {
       // Stop the discovery process
       nsdManager.stopServiceDiscovery(m_serviceListener);
+      unregisterReceiver(m_networkEventReceiver);
       }
     return true;
     }

@@ -2,7 +2,7 @@ package org.sensaura.iothing.model;
 
 /** Represents a unconfigured IoThing
  */
-public class IoThingDevice implements DynamicObject {
+public class IoThingDevice extends IoThing {
   //--- Instance variables
   private String m_id;
 
@@ -10,8 +10,8 @@ public class IoThingDevice implements DynamicObject {
    *
    * @param id
    */
-  public IoThingDevice(String id) {
-    m_id = id;
+  public IoThingDevice(String id, String content, String details) {
+    super(id, content, details);
     }
 
   @Override
