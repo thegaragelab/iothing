@@ -6,7 +6,7 @@
 * Initial implementation. Based on simple Json parser code found at
 * http://zserge.com/jsmn.html
 *--------------------------------------------------------------------------*/
-//#include "Arduino.h"
+#include "Arduino.h"
 #include <stdlib.h>
 #include "Json.h"
 

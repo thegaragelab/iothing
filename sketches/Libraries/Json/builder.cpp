@@ -5,7 +5,7 @@
 *
 * Initial implementation.
 *--------------------------------------------------------------------------*/
-//#include "Arduino.h"
+#include "Arduino.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include "Json.h"
