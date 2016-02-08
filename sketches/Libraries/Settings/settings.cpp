@@ -297,9 +297,8 @@ Settings::Settings(SettingDescription *defaults, void *pBuffer, int size) {
   m_pBuffer2 = &m_pBuffer1[m_size];
   m_pActive = m_pBuffer1;
   m_pDefaults = defaults;
-  // Try and load from EEPROM
-  if(!load())
-    reset(); // Just use defaults
+  // Start with default values
+//  reset(); // Just use defaults
   }
 
 /** Save the current settings to EEPROM
