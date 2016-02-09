@@ -8,6 +8,8 @@
 #include "Arduino.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include "TGL.h"
 #include "Settings.h"
 
 //---------------------------------------------------------------------------
@@ -298,7 +300,7 @@ Settings::Settings(SettingDescription *defaults, void *pBuffer, int size) {
   m_pActive = m_pBuffer1;
   m_pDefaults = defaults;
   // Start with default values
-//  reset(); // Just use defaults
+  reset(); // Just use defaults
   }
 
 /** Save the current settings to EEPROM
@@ -326,10 +328,14 @@ bool Settings::load() {
  */
 bool Settings::reset() {
   int index = 0;
+  DMSG("Active buffer is currently %08x", m_pActive);
   m_pActive = getInactive(m_pBuffer1, m_pBuffer2, m_pActive);
+  DMSG("Switched to active buffer at %08x (p1 = %08x, p2 = %08x)", m_pActive, m_pBuffer1, m_pBuffer2);
   for(int i=0; m_pDefaults[i].typeAndModifier != EndOfSettings; i++) {
+    DMSG("Packing entry %d at offset %d", i, index);
     index = packSetting(m_pActive, index, m_size, m_pDefaults[i]);
     if(index<=0) {
+      DMSG("Packing failed, reverting to previous buffer");
       m_pActive = getInactive(m_pBuffer1, m_pBuffer2, m_pActive);
       return false;
       }
