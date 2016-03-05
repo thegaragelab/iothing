@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WiFi Settings</title>
+  <style>
+    body {
+      padding: 0.5em;
+      margin: auto;
+      font-family: Arial, Helvetica, sans-serif;
+      color: black;
+      }
+    @media screen and (max-width: 1024px) {
+      body {
+        padding-left: 3em;
+        padding-right: 3em;
+        max-width: 100%;
+        font-size: 24pt;
+        }
+      }
+    @media screen and (min-width: 1024px) {
+      body {
+        max-width: 20em;
+        }
+      }
+    label {
+      font-style: bold;
+      font-size: 1.2em;
+      color: #0033cc;
+      }
+    input {
+      display: block;
+      width: 100%;
+      margin-top: 0.3em;
+      font-size: 1.25em;
+      }
+    button {
+      font-size: 1.25em;
+      }
+    .header {
+      color: #0033cc;
+      }
+    .header p {
+      color: black;
+      }
+    .footer {
+      margin-top: 1em;
+      }
+    .right {
+      text-align: right;
+      }
+    #config, #error, #finished {
+      display: none;
+      }
+    #show {
+      width: auto;
+      display: inline;
+      }
+  </style>
+  <script>
+    function showSection(name) {
+      var hidden = [ "message", "config", "error", "finished" ];
+      for(var i=0; i<hidden.length; i++) {
+        if (hidden[i] == name)
+          document.getElementById(hidden[i]).style.display = "block";
+        else
+          document.getElementById(hidden[i]).style.display = "none";
+        }
+      }
+      
+    function onConfig(values) {
+      document.getElementById("ssid").value = values["ssid"] || "";
+      showSection("config");
+      }
+
+    function getJsonResponse(status, payload) {
+      if (status != 200) {
+        showSection("error");
+        return null;
+        }
+      try {
+        return JSON.parse(payload);
+        }
+      catch(err) {
+        showSection("error");
+        }
+      return null;
+      }
+      
+    function saveChanges() {
+      // Get the config from the form
+      var result = { }
+      result["ssid"] = document.getElementById("ssid").value;
+      result["password"] = document.getElementById("password").value;
+      // Post it to the server
+      var url = "http://" + location.hostname + (location.port ? ':' + location.port : '') + "/config";
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.onreadystatechange = function() {
+        if(xmlHttp.readyState == 4) {
+          var result = getJsonResponse(xmlHttp.status, xmlHttp.responseText);
+          if (!result["status"])
+            showSection("error");
+          else
+            showSection("finished");
+          }
+        }
+      xmlHttp.open("POST", url, true);
+      xmlHttp.setRequestHeader("Content-type", "application/json");
+      xmlHttp.send(JSON.stringify(result));
+      }
+    
+    function showPassword() {
+      var cb = document.getElementById("show");
+      var pw = document.getElementById("password");
+      if (cb.checked) {
+        pw.type = "text";
+        }
+      else {
+        pw.type = "password";
+        }
+      }
+    
+    function readConfig() {
+      var url = "http://" + location.hostname + (location.port ? ':' + location.port : '') + "/config";
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.onreadystatechange = function() {
+        if(xmlHttp.readyState == 4)
+          onConfig(getJsonResponse(xmlHttp.status, xmlHttp.responseText));
+        }
+      xmlHttp.open("GET", url, true); // true for asynchronous
+      xmlHttp.send(null);
+      }
+  </script>
+</head>
+<body>
+  <div class="header">
+    <h1>WiFi Settings</h1>
+  </div>
+  <div id="message">
+    Loading current configuration ...
+  </div>
+  <div id="error">
+    An error occurred while communicating with the device. Please refresh the page to try again.
+  </div>
+  <div id="finished">
+    The configuration has been updated. The device should restart in a few moments.
+  </div>
+  <div id="config">
+    <p>
+      Enter the SSID and password for the network you wish this device to join. Click <i>Save</i> to store the new settings and restart the sensor.
+    </p>
+    <div class="field">
+      <label for="ssid">SSID</label>
+      <input id="ssid" type="text">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password">
+      <div class="right">
+        <input id="show" type="checkbox" onclick="showPassword()">Show password
+      </div>
+    </div>
+    <div class="footer right">
+      <button type="button" onclick="saveChanges()">Save</button>
+    </div>
+  </div>
+  <script>
+    (function() {
+      readConfig();
+    })();
+  </script>
+</body>
+</html>
