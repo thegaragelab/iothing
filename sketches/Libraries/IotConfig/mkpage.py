@@ -16,7 +16,7 @@ if __name__ == "__main__":
     data = input.read()
   # Generate the output
   output = open(splitext(sys.argv[1])[0] + ".cpp", "w")
-  output.write("char CONFIG_PAGE[] = {\n  ")
+  output.write("const char CONFIG_PAGE[] PROGMEM = {\n  ")
   count = 0
   for ch in data:
     output.write("0x%02x, " % ord(ch))
@@ -24,6 +24,5 @@ if __name__ == "__main__":
     if (count == 12):
       count = 0
       output.write("\n  ")
-  output.write("\n  };\n")
+  output.write("0x00\n  };\n")
   output.close()
-  

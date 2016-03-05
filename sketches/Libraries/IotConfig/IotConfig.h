@@ -17,6 +17,8 @@ typedef struct {
   uint16_t m_crc16;
   } WIFI_CONFIG;
 
+extern WIFI_CONFIG Config;
+
 typedef enum {
   StateConnecting,   // Connecting to a WiFi network
   StateSystemConfig, // WiFi network not configured or not available
@@ -31,8 +33,6 @@ class IotConfigClass {
     PFN_STATE_CHANGED *m_pfnCallback;
 
   public:
-    WIFI_CONFIG Config;
-
     /** Default constructor
      */
     IotConfigClass();
