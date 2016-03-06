@@ -84,6 +84,25 @@ class JsonParser {
      *         occurs.
      */
     int parse(const char *cszJson);
+
+    /** Find the token representing the content of a named field
+     *
+     * @param object the token index of the object containing the field.
+     * @param cszName the name of the field to find.
+     *
+     * @return the index of the token representing the data for the field
+     *         or -1 if the field does not exist.
+     */
+    int find(int object, const char *cszName);
+
+    /** Get a pointer to the string represented by the token
+     */
+    const char *str(int token);
+
+    /** Get the length to the string represented by the token
+     */
+    int len(int token);
+
   };
 
 // Builder state values

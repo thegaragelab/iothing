@@ -245,3 +245,50 @@ int JsonParser::parse(const char *cszJson) {
     }
   return count;
   }
+
+/** Find the token representing the content of a named field
+ *
+ * @param object the token index of the object containing the field.
+ * @param cszName the name of the field to find.
+ *
+ * @return the index of the token representing the data for the field
+ *         or -1 if the field does not exist.
+ */
+int JsonParser::find(int object, const char *cszName) {
+  // Make sure we are starting with a valid object token
+  if ((object < 0) || (object >= m_tokens) || (m_pTokens[object].type != JsonObject))
+    return -1;
+  int index = 1, fields = 1;
+  int nameLen = strlen(cszName);
+  while(fields <= m_pTokens[object].size) {
+    if (m_pTokens[object + index].type != JsonString)
+      return -1; // Field name must be a string
+    int fieldLen = m_pTokens[object + index].end - m_pTokens[object + index].start;
+    if((fieldLen == nameLen) && (strncmp(cszName, &m_cszSource[m_pTokens[object + index].start], nameLen) == 0))
+      return object + index + 1; // Found it
+    // Move to the next field
+    fields++;
+    index = index + m_pTokens[object + index].size + 1;
+    }
+  // Not found
+  return -1;
+  }
+
+/** Get a pointer to the string represented by the token
+ */
+const char *JsonParser::str(int token) {
+  // Make it can be represented as a string
+  if ((token < 0) || (token >= m_tokens) || ((m_pTokens[token].type != JsonPrimitive) && (m_pTokens[token].type != JsonString)))
+    return NULL;
+  // Return the pointer to the start of the string
+  return &m_cszSource[m_pTokens[token].start];
+  }
+
+/** Get the length to the string represented by the token
+ */
+int JsonParser::len(int token) {
+  // Make it can be represented as a string
+  if ((token < 0) || (token >= m_tokens) || ((m_pTokens[token].type != JsonPrimitive) && (m_pTokens[token].type != JsonString)))
+    return 0;
+  return m_pTokens[token].end - m_pTokens[token].start;
+  }

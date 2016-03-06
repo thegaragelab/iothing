@@ -11,9 +11,15 @@
 #ifndef __IOTCONFIG_H
 #define __IOTCONFIG_H
 
+// Maximum length of SSIDs (32 characters + terminator)
+#define MAX_SSID_LENGTH 33
+
+// Maximum length of passwords (64 characters + terminator)
+#define MAX_PASSWORD_LENGTH 66
+
 typedef struct {
-  char     m_szSSID[32];
-  char     m_szPass[32];
+  char     m_szSSID[MAX_SSID_LENGTH];
+  char     m_szPass[MAX_PASSWORD_LENGTH];
   uint16_t m_crc16;
   } WIFI_CONFIG;
 

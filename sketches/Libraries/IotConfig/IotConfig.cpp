@@ -9,8 +9,9 @@
 #include "ESP8266WiFi.h"
 #include "ESP8266WebServer.h"
 #include "DNSServer.h"
-#include "IotConfig.h"
 #include "TGL.h"
+#include "IotConfig.h"
+#include "Json.h"
 
 //--- SoftAP configuration
 IPAddress apIP(192, 168, 4, 1);
@@ -473,22 +474,39 @@ void handleNotFound() {
   }
 
 void handleConfig() {
-  int code = 200;
-  String response = "";
-  if(httpServer.method() == HTTP_GET) {
-    // Read configuration
-    code = 200;
-    response += "{\"ssid\": \"";
-    response += Config.m_szSSID;
-    response += "\" }";
+  bool status = false;
+  if(httpServer.method() == HTTP_POST) {
+    // Process the configuration
+    bool status = false;
+    if (httpServer.hasArg("plain")) {
+      JsonToken tokens[8];
+      JsonParser parser(tokens, 8);
+      String json = httpServer.arg("plain");
+      int count = parser.parse(json.c_str());
+      if(count > 0) {
+        // Extract the settings
+        int field = parser.find(0, "ssid");
+        if((field>0)&&(parser.str(field)!=NULL)&&(parser.len(field)<MAX_SSID_LENGTH)) {
+          memset(Config.m_szSSID, 0, MAX_SSID_LENGTH);
+          strncpy(Config.m_szSSID, parser.str(field), parser.len(field));
+          }
+        field = parser.find(0, "password");
+        if((field>0)&&(parser.str(field)!=NULL)&&(parser.len(field)<MAX_PASSWORD_LENGTH)) {
+          memset(Config.m_szPass, 0, MAX_PASSWORD_LENGTH);
+          strncpy(Config.m_szPass, parser.str(field), parser.len(field));
+          }
+        }
+      }
     }
-  else if(httpServer.method() == HTTP_POST) {
-    // Write configuration
-    code = 200;
-    Serial.println("Writing config");
-    response += "{ }";
+  // Build the response with the current values
+  String response = "{\"ssid\": \"";
+  response += Config.m_szSSID;
+  if (httpServer.method() == HTTP_POST) {
+    response += ", \"status\":";
+    response += (status ? "true" : "false");
     }
-  httpServer.send(code, "application/json", response);
+  response += "\" }";
+  httpServer.send(200, "application/json", response);
   }
 
 void handleDefault() {
