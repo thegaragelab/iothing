@@ -9,6 +9,7 @@
 #include "ESP8266WiFi.h"
 #include "ESP8266WebServer.h"
 #include "DNSServer.h"
+#include "EEPROM.h"
 #include "TGL.h"
 #include "IotConfig.h"
 #include "Json.h"
@@ -474,10 +475,9 @@ void handleNotFound() {
   }
 
 void handleConfig() {
-  bool status = false;
+  bool status = true;
   if(httpServer.method() == HTTP_POST) {
     // Process the configuration
-    bool status = false;
     if (httpServer.hasArg("plain")) {
       JsonToken tokens[8];
       JsonParser parser(tokens, 8);
@@ -501,15 +501,18 @@ void handleConfig() {
   // Build the response with the current values
   String response = "{\"ssid\": \"";
   response += Config.m_szSSID;
+  response += "\"";
   if (httpServer.method() == HTTP_POST) {
     response += ", \"status\":";
     response += (status ? "true" : "false");
     }
-  response += "\" }";
+  response += " }";
+  Serial.println(response);
   httpServer.send(200, "application/json", response);
   }
 
 void handleDefault() {
+  Serial.println("Got main page request");
   httpServer.send_P(200, PSTR("text/html"), CONFIG_PAGE);
   }
 
@@ -534,6 +537,7 @@ void webServer(bool withForm) {
  */
 IotConfigClass::IotConfigClass() {
   m_pfnCallback = NULL;
+  m_eepromOffset = 0;
   }
 
 /** Set the callback function for state changes
@@ -550,11 +554,15 @@ void IotConfigClass::setCallback(PFN_STATE_CHANGED *pfnCallback) {
  * @param force if true the library will go into wifi configuration mode
  *              regardless of the current settings.
  */
-void IotConfigClass::setup(bool force) {
-  // TODO: Load and verify the stored configuration
-  Config.m_szSSID[0] = '\0';
-  Config.m_szPass[0] = '\0';
-  force = true;
+bool IotConfigClass::setup(bool force, int eepromOffset) {
+  m_eepromOffset = eepromOffset;
+  // Load and verify the stored configuration
+  EEPROM.get(m_eepromOffset, Config);
+  Crc16 crc;
+  if(crc.XModemCrc((uint8_t *)&Config, 0, sizeof(WIFI_CONFIG) - sizeof(uint16_t))!=Config.m_crc16) {
+    memset(&Config, 0, sizeof(WIFI_CONFIG));
+    force = true;
+    }
   // If we are not forcing config mode try and connect
   if(!force) {
     UPDATE_STATUS(m_pfnCallback, StateConnecting);
@@ -571,6 +579,8 @@ void IotConfigClass::setup(bool force) {
     }
   else
     webServer(false);
+  // Let the caller know what mode we are in
+  return force;
   }
 
 /** Main loop
