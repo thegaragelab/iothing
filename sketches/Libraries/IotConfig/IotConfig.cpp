@@ -425,6 +425,27 @@ const char CONFIG_PAGE[] PROGMEM = {
  * @return true if the connection was successful
  */
 static bool wifiConnect(const char *cszSSID, const char *cszPassword) {
+  // Make sure we have a SSID
+  if(strlen(cszSSID)==0)
+    return false;
+  // Clear current settings
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  // Try and establish a connection
+  int attempts = 3;
+  while (attempts) {
+    int status;
+    if(strlen(cszPassword)==0)
+      status = WiFi.begin(cszSSID);
+    else
+      status = WiFi.begin(cszSSID, cszPassword);
+    if(status==WL_CONNECTED)
+      return true;
+    // Wait 5 seconds for the next attempt
+    if(--attempts)
+      delay(5000);
+    }
+  // Failed
   return false;
   }
 
