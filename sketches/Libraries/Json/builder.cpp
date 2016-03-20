@@ -22,46 +22,17 @@
 // Helpers
 //---------------------------------------------------------------------------
 
-/** Add a character to the given buffer
- */
-static bool addChar(char *szBuffer, int &index, int size, char ch) {
-  if (index>=size)
-    return false;
-  szBuffer[index++] = ch;
-  return true;
-  }
-
-/** Add text to the given buffer
- *
- * @return false if the buffer is full
- */
-static bool addText(char *szBuffer, int &index, int size, const char *cszText) {
-  bool result = true;
-  for (int i=0; cszText[i] && result; i++)
-    result &= addChar(szBuffer, index, size, cszText[i]);
-  return result;
-  }
-
-/** Add a quoted string to the output
- */
-static bool addString(char *szBuffer, int &index, int size, const char *cszString) {
-  bool result = addChar(szBuffer, index, size, QUOTE);
-  result &= addText(szBuffer, index, size, cszString);
-  result &= addChar(szBuffer, index, size, QUOTE);
-  return result;
-  }
-
 /** Add an integer value to the output
  *
  * use itoa()
  *
  */
-static bool addInteger(char *szBuffer, int &index, int size, int value) {
+static const char *getInteger(int value) {
   static char intBuff[12];
   int count = snprintf(intBuff, sizeof(intBuff), "%d", value);
   if((count<0)||(count>=sizeof(intBuff)))
-    return false;
-  return addText(szBuffer, index, size, intBuff);
+    return "0"; // Should be something better
+  return intBuff;
   }
 
 /** Add a floating point value to the output
@@ -70,67 +41,46 @@ static bool addInteger(char *szBuffer, int &index, int size, int value) {
  *
  * http://www.nongnu.org/avr-libc/user-manual/group__avr__stdlib.html#ga6c140bdd3b9bd740a1490137317caa44
  */
-static bool addDouble(char *szBuffer, int &index, int size, double value) {
+static const char *getDouble(double value) {
   static char floatBuff[12];
   int count = snprintf(floatBuff, sizeof(floatBuff), "%g", value);
   if((count<0)||(count>=sizeof(floatBuff)))
-    return false;
-  return addText(szBuffer, index, size, floatBuff);
+    return "0"; // Should be something better
+  return floatBuff;
   }
 
 //---------------------------------------------------------------------------
 // Implementation of JsonBuilder
 //---------------------------------------------------------------------------
 
-/** Initialise the state
- */
-void JsonBuilder::init() {
-  m_szBuffer = NULL;
-  m_index = 0;
-  m_size = 0;
-  m_depth = -1;
+void JsonBuilder::addString(const char *cszString) {
+  m_buffer += '"';
+  m_buffer += cszString;
+  m_buffer += '"';
   }
 
 /** Default constructor
  */
 JsonBuilder::JsonBuilder() {
-  init();
-  }
-
-/** Initialise the builder
- *
- * The builder always creates an 'object' and adds a '{' character to the
- * start of the buffer. Additional values are then added with the
- * appropriate 'addXXX()' methods.
- *
- * @param szBuffer pointer to a buffer to hold the generated JSON
- * @param size the number of characters the buffer can hold.
- */
-void JsonBuilder::begin(char *szBuffer, int size) {
-  init();
-  m_szBuffer = szBuffer;
-  m_size = size;
   m_state[0] = BuildBase;
   m_depth = 0;
   // Add the opening brace
-  addChar(m_szBuffer, m_index, m_size, BEGIN_OBJECT);
+  m_buffer += BEGIN_OBJECT;
   }
 
 /** Add a string value to the current object
  *
  * @param cszName the name of the new value
  * @param cszValue the value to associated with the name.
- *
- * @return true if the value was added, false if the buffer is full.
  */
 bool JsonBuilder::add(const char *cszName, const char *cszValue) {
   if((m_depth<0)||(m_state[m_depth]==BuildArray))
     return false; // Invalid state
-  bool result = addString(m_szBuffer, m_index, m_size, cszName);
-  result &= addChar(m_szBuffer, m_index, m_size, END_NAME);
-  result &= addString(m_szBuffer, m_index, m_size, cszValue);
-  result &= addChar(m_szBuffer, m_index, m_size, SEPARATOR);
-  return result;
+  addString(cszName);
+  m_buffer += END_NAME;
+  addString(cszName);
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Add a boolean value to the current object
@@ -143,11 +93,11 @@ bool JsonBuilder::add(const char *cszName, const char *cszValue) {
 bool JsonBuilder::add(const char *cszName, bool value) {
   if((m_depth<0)||(m_state[m_depth]==BuildArray))
     return false; // Invalid state
-  bool result = addString(m_szBuffer, m_index, m_size, cszName);
-  result &= addChar(m_szBuffer, m_index, m_size, END_NAME);
-  result &= addText(m_szBuffer, m_index, m_size, value ? "true" : "false");
-  result &= addChar(m_szBuffer, m_index, m_size, SEPARATOR);
-  return result;
+  addString(cszName);
+  m_buffer += END_NAME;
+  m_buffer += (value ? "true" : "false");
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Add a integer value to the current object
@@ -160,11 +110,11 @@ bool JsonBuilder::add(const char *cszName, bool value) {
 bool JsonBuilder::add(const char *cszName, int value) {
   if((m_depth<0)||(m_state[m_depth]==BuildArray))
     return false; // Invalid state
-  bool result = addString(m_szBuffer, m_index, m_size, cszName);
-  result &= addChar(m_szBuffer, m_index, m_size, END_NAME);
-  result &= addInteger(m_szBuffer, m_index, m_size, value);
-  result &= addChar(m_szBuffer, m_index, m_size, SEPARATOR);
-  return result;
+  addString(cszName);
+  m_buffer += END_NAME;
+  m_buffer += getInteger(value);
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Add a floating point value to the current object
@@ -177,11 +127,11 @@ bool JsonBuilder::add(const char *cszName, int value) {
 bool JsonBuilder::add(const char *cszName, double value) {
   if((m_depth<0)||(m_state[m_depth]==BuildArray))
     return false; // Invalid state
-  bool result = addString(m_szBuffer, m_index, m_size, cszName);
-  result &= addChar(m_szBuffer, m_index, m_size, END_NAME);
-  result &= addDouble(m_szBuffer, m_index, m_size, value);
-  result &= addChar(m_szBuffer, m_index, m_size, SEPARATOR);
-  return result;
+  addString(cszName);
+  m_buffer += END_NAME;
+  m_buffer += getDouble(value);
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Add a new child object to the current object
@@ -202,10 +152,10 @@ bool JsonBuilder::beginObject(const char *cszName) {
   m_depth++;
   m_state[m_depth] = BuildObject;
   // Add the name and opening brace
-  bool ok = true;
-  ok &= addString(m_szBuffer, m_index, m_size, cszName);
-  ok &= addChar(m_szBuffer, m_index, m_size, END_NAME);
-  return ok && addChar(m_szBuffer, m_index, m_size, BEGIN_OBJECT);
+  addString(cszName);
+  m_buffer += END_NAME;
+  m_buffer += BEGIN_OBJECT;
+  return true;
   }
 
 /** Add a new child object to the current list
@@ -224,7 +174,8 @@ bool JsonBuilder::beginObject() {
   m_depth++;
   m_state[m_depth] = BuildObject;
   // Add the opening brace
-  return addChar(m_szBuffer, m_index, m_size, BEGIN_OBJECT);
+  m_buffer += BEGIN_OBJECT;
+  return true;
   }
 
 /** End the current child object
@@ -237,11 +188,14 @@ bool JsonBuilder::endObject() {
     return false;
   // Move back to the previous state
   m_depth--;
-  // Remove trailing comma
-  if (m_szBuffer[m_index - 1] == SEPARATOR)
-    m_index--;
+  // Remove trailing comma if present
+  int last = m_buffer.length() - 1;
+  if((last>0)&&(m_buffer.charAt(last) == SEPARATOR))
+    m_buffer.remove(last - 1);
   // Add the closing brace and comma
-  return addChar(m_szBuffer, m_index, m_size, END_OBJECT) && addChar(m_szBuffer, m_index, m_size, SEPARATOR);
+  m_buffer += END_OBJECT;
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Add a new child array to the current object
@@ -258,10 +212,10 @@ bool JsonBuilder::beginArray(const char *cszName) {
   m_depth++;
   m_state[m_depth] = BuildArray;
   // Add the name and opening bracket
-  bool ok = true;
-  ok &= addString(m_szBuffer, m_index, m_size, cszName);
-  ok &= addChar(m_szBuffer, m_index, m_size, END_NAME);
-  return ok && addChar(m_szBuffer, m_index, m_size, BEGIN_ARRAY);
+  addString(cszName);
+  m_buffer += END_NAME;
+  m_buffer += BEGIN_ARRAY;
+  return true;
   }
 
 /** Add a new child array to the current array
@@ -276,7 +230,8 @@ bool JsonBuilder::beginArray() {
   m_depth++;
   m_state[m_depth] = BuildArray;
   // Add the opening bracket
-  return addChar(m_szBuffer, m_index, m_size, BEGIN_ARRAY);
+  m_buffer += BEGIN_ARRAY;
+  return true;
   }
 
 /** End the current child array
@@ -289,11 +244,14 @@ bool JsonBuilder::endArray() {
     return false;
   // Move back to the previous state
   m_depth--;
-  // Remove trailing comma
-  if (m_szBuffer[m_index - 1] == SEPARATOR)
-    m_index--;
+  // Remove trailing comma if present
+  int last = m_buffer.length() - 1;
+  if((last>0)&&(m_buffer.charAt(last) == SEPARATOR))
+    m_buffer.remove(last - 1);
   // Add the closing bracket and comma
-  return addChar(m_szBuffer, m_index, m_size, END_ARRAY) && addChar(m_szBuffer, m_index, m_size, SEPARATOR);
+  m_buffer += END_ARRAY;
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Add a new string to the current array
@@ -306,7 +264,9 @@ bool JsonBuilder::endArray() {
 bool JsonBuilder::add(const char *cszValue) {
   if((m_depth<0)||(m_state[m_depth]!=BuildArray))
     return false; // Invalid state
-  return addString(m_szBuffer, m_index, m_size, cszValue) && addChar(m_szBuffer, m_index, m_size, SEPARATOR);
+  addString(cszValue);
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Add a new boolean value to the current array
@@ -319,7 +279,9 @@ bool JsonBuilder::add(const char *cszValue) {
 bool JsonBuilder::add(bool value) {
   if((m_depth<0)||(m_state[m_depth]!=BuildArray))
     return false; // Invalid state
-  return addText(m_szBuffer, m_index, m_size, value ? "true" : "false") && addChar(m_szBuffer, m_index, m_size, SEPARATOR);
+  m_buffer += (value ? "true" : "false");
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Add a new integer value to the current array
@@ -332,7 +294,9 @@ bool JsonBuilder::add(bool value) {
 bool JsonBuilder::add(int value) {
   if((m_depth<0)||(m_state[m_depth]!=BuildArray))
     return false; // Invalid state
-  return addInteger(m_szBuffer, m_index, m_size, value) && addChar(m_szBuffer, m_index, m_size, SEPARATOR);
+  m_buffer += getInteger(value);
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Add a new floating point value to the current array
@@ -345,7 +309,9 @@ bool JsonBuilder::add(int value) {
 bool JsonBuilder::add(double value) {
   if((m_depth<0)||(m_state[m_depth]!=BuildArray))
     return false; // Invalid state
-  return addDouble(m_szBuffer, m_index, m_size, value) && addChar(m_szBuffer, m_index, m_size, SEPARATOR);
+  m_buffer += getDouble(value);
+  m_buffer += SEPARATOR;
+  return true;
   }
 
 /** Finish building.
@@ -357,29 +323,31 @@ bool JsonBuilder::add(double value) {
  *         buffer or 0 if the buffer is full.
  */
 int JsonBuilder::end() {
-  bool ok = true;
   // Make sure we have been initialised
   if (m_depth < 0)
-    return false;
+    return -1;
   // Close out any pending blocks
   while(m_depth) {
-    if (m_szBuffer[m_index - 1] == SEPARATOR)
-      m_index--; // Remove trailing comma
+    // Remove trailing comma if present
+    int last = m_buffer.length() - 1;
+    if((last>0)&&(m_buffer.charAt(last) == SEPARATOR))
+      m_buffer.remove(last - 1);
+    // Handle each object type
     switch(m_state[m_depth]) {
       case BuildObject:
-        ok = addChar(m_szBuffer, m_index, m_size, END_OBJECT);
+        m_buffer += END_OBJECT;
         break;
       case BuildArray:
-        ok = addChar(m_szBuffer, m_index, m_size, END_ARRAY);
+        m_buffer += END_ARRAY;
         break;
       }
     m_depth--;
     }
-  if (m_szBuffer[m_index - 1] == SEPARATOR)
-    m_index--; // Remove trailing comma
+  // Remove trailing comma if present
+  int last = m_buffer.length() - 1;
+  if((last>0)&&(m_buffer.charAt(last) == SEPARATOR))
+    m_buffer.remove(last - 1);
   // Add the terminating brace
-  ok = addChar(m_szBuffer, m_index, m_size, END_OBJECT);
-  if(ok)
-    m_szBuffer[m_index] = '\0';
-  return ok ? m_index : 0;
+  m_buffer += END_OBJECT;
+  return m_buffer.length();
   }

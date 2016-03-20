@@ -499,16 +499,12 @@ void handleConfig() {
       }
     }
   // Build the response with the current values
-  String response = "{\"ssid\": \"";
-  response += Config.m_szSSID;
-  response += "\"";
-  if (httpServer.method() == HTTP_POST) {
-    response += ", \"status\":";
-    response += (status ? "true" : "false");
-    }
-  response += " }";
-  Serial.println(response);
-  httpServer.send(200, "application/json", response);
+  JsonBuilder builder;
+  builder.add("ssid", Config.m_szSSID);
+  if (httpServer.method() == HTTP_POST)
+    builder.add("status", status);
+  Serial.println(builder.getResult());
+  httpServer.send(200, "application/json", builder.getResult());
   }
 
 void handleDefault() {

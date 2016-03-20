@@ -119,32 +119,19 @@ typedef enum {
  */
 class JsonBuilder {
   private:
-    char            *m_szBuffer;
-    int              m_index;
-    int              m_size;
+    String           m_buffer;
     JsonBuilderState m_state[MAX_DEPTH];
     int              m_depth;
 
   protected:
-    /** Initialise the state
+    /** Add a string to the buffer
      */
-    void init();
+    void addString(const char *cszString);
 
   public:
     /** Default constructor
      */
     JsonBuilder();
-
-    /** Initialise the builder
-     *
-     * The builder always creates an 'object' and adds a '{' character to the
-     * start of the buffer. Additional values are then added with the
-     * appropriate 'addXXX()' methods.
-     *
-     * @param szBuffer pointer to a buffer to hold the generated JSON
-     * @param size the number of characters the buffer can hold.
-     */
-    void begin(char *szBuffer, int size);
 
     /** Add a string value to the current object
      *
@@ -281,6 +268,12 @@ class JsonBuilder {
      *         buffer or 0 if the buffer is full.
      */
     int end();
+
+    /** Get the resulting string
+     */
+    inline String& getResult() {
+      return m_buffer;
+      }
   };
 
 #endif /* __JSON_H */
