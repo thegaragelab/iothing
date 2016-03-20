@@ -64,6 +64,12 @@ class IotConfigClass {
      */
     IotConfigClass();
 
+    /** Get the offset in the EEPROM where the config is stored
+     */
+    inline int getEepromOffset() {
+      return m_eepromOffset;
+      }
+
     /** Set the callback function for state changes
      *
      * @param pfnCallback pointer to the function to receive callback notifications.

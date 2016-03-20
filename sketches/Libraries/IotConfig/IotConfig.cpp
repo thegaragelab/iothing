@@ -435,15 +435,20 @@ static bool wifiConnect(const char *cszSSID, const char *cszPassword) {
   int attempts = 3;
   while (attempts) {
     int status;
+    Serial.print("Attempting to connect to ");
+    Serial.println(cszSSID);
     if(strlen(cszPassword)==0)
       status = WiFi.begin(cszSSID);
     else
       status = WiFi.begin(cszSSID, cszPassword);
-    if(status==WL_CONNECTED)
+    if(status==WL_CONNECTED) {
+      Serial.println("Connection succeeded");
       return true;
+      }
     // Wait 5 seconds for the next attempt
-    if(--attempts)
-      delay(5000);
+    Serial.println("Connection failed");
+    if(--attempts) // Wait before next attempt
+      delay(10000);
     }
   // Failed
   return false;
@@ -525,6 +530,14 @@ void handleConfig() {
         status |= updateField(parser, "node", Config.m_szNode, MAX_NODEID_LENGTH);
         status |= updateField(parser, "mqtt", Config.m_szMqtt, MAX_SERVER_NAME_LENGTH);
         status |= updateField(parser, "topic", Config.m_szTopic, MAX_TOPIC_NAME_LENGTH);
+        // Recalculate the CRC
+        Crc16 crc;
+        Config.m_crc16 = crc.XModemCrc((uint8_t *)&Config, 0, sizeof(WIFI_CONFIG) - sizeof(uint16_t));
+        // Save to EEPROM
+        if(status) {
+          EEPROM.put(IotConfig.getEepromOffset(), Config);
+          EEPROM.commit();
+          }
         }
       }
     }
@@ -589,7 +602,8 @@ bool IotConfigClass::setup(bool force, int eepromOffset) {
   // Load and verify the stored configuration
   EEPROM.get(m_eepromOffset, Config);
   Crc16 crc;
-  if(crc.XModemCrc((uint8_t *)&Config, 0, sizeof(WIFI_CONFIG) - sizeof(uint16_t))!=Config.m_crc16) {
+  uint16_t expected = crc.XModemCrc((uint8_t *)&Config, 0, sizeof(WIFI_CONFIG) - sizeof(uint16_t));
+  if(expected!=Config.m_crc16) {
     memset(&Config, 0, sizeof(WIFI_CONFIG));
     force = true;
     }
