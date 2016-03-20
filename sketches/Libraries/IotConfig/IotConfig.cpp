@@ -8,6 +8,7 @@
 #include "Arduino.h"
 #include "ESP8266WiFi.h"
 #include "ESP8266WebServer.h"
+#include "ESP8266mDNS.h"
 #include "DNSServer.h"
 #include "EEPROM.h"
 #include "TGL.h"
@@ -608,6 +609,9 @@ bool IotConfigClass::setup(bool force, int eepromOffset) {
     }
   else
     webServer(false);
+  // Set up the MDNS server
+  MDNS.begin("iothing"); // TODO: Should be choosing a unique name
+  MDNS.addService("iothing", "tcp", 80);
   // Let the caller know what mode we are in
   return force;
   }
@@ -620,6 +624,7 @@ bool IotConfigClass::setup(bool force, int eepromOffset) {
 void IotConfigClass::loop() {
   httpServer.handleClient();
   dnsServer.processNextRequest();
+  MDNS.update();
   }
 
 // The singleton instance
