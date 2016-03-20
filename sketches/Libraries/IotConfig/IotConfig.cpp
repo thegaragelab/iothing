@@ -503,6 +503,7 @@ void handleConfig() {
   builder.add("ssid", Config.m_szSSID);
   if (httpServer.method() == HTTP_POST)
     builder.add("status", status);
+  builder.end();
   Serial.println(builder.getResult());
   httpServer.send(200, "application/json", builder.getResult());
   }

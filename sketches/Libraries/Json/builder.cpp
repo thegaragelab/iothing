@@ -49,6 +49,14 @@ static const char *getDouble(double value) {
   return floatBuff;
   }
 
+/** Trim a separator character from the end of the string
+ */
+static void trimSeparator(String &buffer) {
+  int last = buffer.length() - 1;
+  if((last>0)&&(buffer.charAt(last) == SEPARATOR))
+    buffer.remove(last);
+  }
+
 //---------------------------------------------------------------------------
 // Implementation of JsonBuilder
 //---------------------------------------------------------------------------
@@ -78,7 +86,7 @@ bool JsonBuilder::add(const char *cszName, const char *cszValue) {
     return false; // Invalid state
   addString(cszName);
   m_buffer += END_NAME;
-  addString(cszName);
+  addString(cszValue);
   m_buffer += SEPARATOR;
   return true;
   }
@@ -189,9 +197,7 @@ bool JsonBuilder::endObject() {
   // Move back to the previous state
   m_depth--;
   // Remove trailing comma if present
-  int last = m_buffer.length() - 1;
-  if((last>0)&&(m_buffer.charAt(last) == SEPARATOR))
-    m_buffer.remove(last - 1);
+  trimSeparator(m_buffer);
   // Add the closing brace and comma
   m_buffer += END_OBJECT;
   m_buffer += SEPARATOR;
@@ -245,9 +251,7 @@ bool JsonBuilder::endArray() {
   // Move back to the previous state
   m_depth--;
   // Remove trailing comma if present
-  int last = m_buffer.length() - 1;
-  if((last>0)&&(m_buffer.charAt(last) == SEPARATOR))
-    m_buffer.remove(last - 1);
+  trimSeparator(m_buffer);
   // Add the closing bracket and comma
   m_buffer += END_ARRAY;
   m_buffer += SEPARATOR;
@@ -328,10 +332,10 @@ int JsonBuilder::end() {
     return -1;
   // Close out any pending blocks
   while(m_depth) {
+    Serial.print("Inside: ");
+    Serial.println(m_buffer);
     // Remove trailing comma if present
-    int last = m_buffer.length() - 1;
-    if((last>0)&&(m_buffer.charAt(last) == SEPARATOR))
-      m_buffer.remove(last - 1);
+    trimSeparator(m_buffer);
     // Handle each object type
     switch(m_state[m_depth]) {
       case BuildObject:
@@ -344,9 +348,7 @@ int JsonBuilder::end() {
     m_depth--;
     }
   // Remove trailing comma if present
-  int last = m_buffer.length() - 1;
-  if((last>0)&&(m_buffer.charAt(last) == SEPARATOR))
-    m_buffer.remove(last - 1);
+  trimSeparator(m_buffer);
   // Add the terminating brace
   m_buffer += END_OBJECT;
   return m_buffer.length();
