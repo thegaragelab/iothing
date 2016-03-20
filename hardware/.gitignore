@@ -1,5 +1,6 @@
 ~*
-*.gbr
+*.g??
+*.zip
 *.drl
 *.txt
 *.mop
