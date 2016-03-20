@@ -46,18 +46,24 @@ typedef struct {
 extern WIFI_CONFIG Config;
 
 typedef enum {
+  StateIdle,         // Idle, no connection
   StateConnecting,   // Connecting to a WiFi network
   StateSystemConfig, // WiFi network not configured or not available
   StateConnected,    // Connected to configured WiFi network
   } ConfigState;
 
 // Callback function for state changes
-typedef void (*PFN_STATE_CHANGED)(ConfigState state);
+typedef void (*PFN_STATE_CHANGED)(ConfigState previous, ConfigState current);
+
+// Callback function for updates
+typedef void (*PFN_UPDATE_APPLIED)();
 
 class IotConfigClass {
   private:
-    PFN_STATE_CHANGED *m_pfnCallback;
-    int m_eepromOffset;
+    PFN_STATE_CHANGED  m_pfnCallback;
+    PFN_UPDATE_APPLIED m_pfnUpdate;
+    ConfigState        m_state;
+    int                m_eepromOffset;
 
   public:
     /** Default constructor
@@ -75,7 +81,37 @@ class IotConfigClass {
      * @param pfnCallback pointer to the function to receive callback notifications.
      *                    This may be NULL to disable callbacks completely.
      */
-    void setCallback(PFN_STATE_CHANGED *pfnCallback);
+    inline void setStateChangeCallback(PFN_STATE_CHANGED pfnCallback) {
+      m_pfnCallback = pfnCallback;
+      }
+
+    /** Set the callback function for updates
+     */
+    inline void setUpdateCallback(PFN_UPDATE_APPLIED pfnUpdate) {
+      m_pfnUpdate = pfnUpdate;
+      }
+
+    /** Trigger the state update callback
+     */
+    inline void onStateChange(ConfigState state) {
+      ConfigState previous = m_state;
+      m_state = state;
+      if(m_pfnCallback!=NULL)
+        (*m_pfnCallback)(previous, state);
+      }
+
+    /** Trigger the config changed callback
+     */
+    inline void onConfigChange() {
+      if(m_pfnUpdate!=NULL)
+        (*m_pfnUpdate)();
+      }
+
+    /** Get the current state
+     */
+    inline ConfigState state() {
+      return m_state;
+      }
 
     /** Set up the library
      *
