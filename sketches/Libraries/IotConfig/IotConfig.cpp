@@ -23,9 +23,6 @@ IPAddress netMsk(255, 255, 255, 0);
 #define WIFI_SSID     "ssid"
 #define WIFI_PASSWORD "password"
 
-#define UPDATE_STATUS(pfnCallback, status) \
-  if(pfnCallback) { (*pfnCallback)(status); }
-
 //---------------------------------------------------------------------------
 // Configuration page.
 //
@@ -550,8 +547,11 @@ void handleConfig() {
   builder.add("node", Config.m_szNode);
   builder.add("mqtt", Config.m_szMqtt);
   builder.add("topic", Config.m_szTopic);
-  if (httpServer.method() == HTTP_POST)
+  if (httpServer.method() == HTTP_POST) {
     builder.add("status", status);
+    if(status)
+      IotConfig.onConfigChange();
+    }
   Serial.println(builder.getResult());
   httpServer.send(200, "application/json", builder.getResult());
   }
@@ -581,17 +581,10 @@ void webServer(bool withForm) {
 /** Default constructor
  */
 IotConfigClass::IotConfigClass() {
+  m_state = StateIdle;
   m_pfnCallback = NULL;
+  m_pfnUpdate = NULL;
   m_eepromOffset = 0;
-  }
-
-/** Set the callback function for state changes
- *
- * @param pfnCallback pointer to the function to receive callback notifications.
- *                    This may be NULL to disable callbacks completely.
- */
-void IotConfigClass::setCallback(PFN_STATE_CHANGED *pfnCallback) {
-  m_pfnCallback = pfnCallback;
   }
 
 /** Set up the library
@@ -610,7 +603,7 @@ bool IotConfigClass::setup(bool force, int eepromOffset) {
     }
   // If we are not forcing config mode try and connect
   if(!force) {
-    UPDATE_STATUS(m_pfnCallback, StateConnecting);
+    onStateChange(StateConnecting);
     force = !wifiConnect(
       Config.m_szSSID,
       Config.m_szPass
@@ -618,12 +611,14 @@ bool IotConfigClass::setup(bool force, int eepromOffset) {
     }
   // Do we need to enter system mode ?
   if(force) {
-    UPDATE_STATUS(m_pfnCallback, StateSystemConfig);
+    onStateChange(StateSystemConfig);
     wifiAccessPoint();
     webServer(true);
     }
-  else
+  else {
+    onStateChange(StateConnected);
     webServer(false);
+    }
   // Set up the MDNS server
   String name = chooseUniqueName();
   MDNS.begin(name.c_str());
