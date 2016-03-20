@@ -462,6 +462,20 @@ static void wifiAccessPoint() {
   delay(100);
   }
 
+/** Update a single field from the JSON buffer
+ */
+static bool updateField(JsonParser &parser, const char *cszName, char *buffer, int size) {
+  int field = parser.find(0, cszName);
+  if((field>0)&&(parser.str(field)!=NULL)) {
+    if(parser.len(field)>=size)
+      return false;
+    // Update the value
+    memset(buffer, 0, size);
+    strncpy(buffer, parser.str(field), parser.len(field));
+    }
+  return true;
+  }
+
 //---------------------------------------------------------------------------
 // Web server
 //---------------------------------------------------------------------------
@@ -485,22 +499,20 @@ void handleConfig() {
       int count = parser.parse(json.c_str());
       if(count > 0) {
         // Extract the settings
-        int field = parser.find(0, "ssid");
-        if((field>0)&&(parser.str(field)!=NULL)&&(parser.len(field)<MAX_SSID_LENGTH)) {
-          memset(Config.m_szSSID, 0, MAX_SSID_LENGTH);
-          strncpy(Config.m_szSSID, parser.str(field), parser.len(field));
-          }
-        field = parser.find(0, "password");
-        if((field>0)&&(parser.str(field)!=NULL)&&(parser.len(field)<MAX_PASSWORD_LENGTH)) {
-          memset(Config.m_szPass, 0, MAX_PASSWORD_LENGTH);
-          strncpy(Config.m_szPass, parser.str(field), parser.len(field));
-          }
+        status |= updateField(parser, "ssid", Config.m_szSSID, MAX_SSID_LENGTH);
+        status |= updateField(parser, "password", Config.m_szPass, MAX_PASSWORD_LENGTH);
+        status |= updateField(parser, "node", Config.m_szNode, MAX_NODEID_LENGTH);
+        status |= updateField(parser, "mqtt", Config.m_szMqtt, MAX_SERVER_NAME_LENGTH);
+        status |= updateField(parser, "topic", Config.m_szTopic, MAX_TOPIC_NAME_LENGTH);
         }
       }
     }
   // Build the response with the current values
   JsonBuilder builder;
   builder.add("ssid", Config.m_szSSID);
+  builder.add("node", Config.m_szNode);
+  builder.add("mqtt", Config.m_szMqtt);
+  builder.add("topic", Config.m_szTopic);
   if (httpServer.method() == HTTP_POST)
     builder.add("status", status);
   Serial.println(builder.getResult());
