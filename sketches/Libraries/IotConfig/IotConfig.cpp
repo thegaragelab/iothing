@@ -418,6 +418,21 @@ const char CONFIG_PAGE[] PROGMEM = {
 // Helper functions
 //---------------------------------------------------------------------------
 
+static String chooseUniqueName() {
+  String result;
+  if(strlen(Config.m_szNode)==0) {
+    // Use the ESP8266 chip ID
+    result += "IoThing_";
+    result += ESP.getChipId();
+    }
+  else {
+    // Use the node ID
+    result += "IOT";
+    result += Config.m_szNode;
+    }
+  return result;
+  }
+
 /** Attempt to connect to the access point
  *
  * @param cszSSID the SSID of the AP to connect to
@@ -610,7 +625,8 @@ bool IotConfigClass::setup(bool force, int eepromOffset) {
   else
     webServer(false);
   // Set up the MDNS server
-  MDNS.begin("iothing"); // TODO: Should be choosing a unique name
+  String name = chooseUniqueName();
+  MDNS.begin(name.c_str());
   MDNS.addService("iothing", "tcp", 80);
   // Let the caller know what mode we are in
   return force;
