@@ -332,8 +332,6 @@ int JsonBuilder::end() {
     return -1;
   // Close out any pending blocks
   while(m_depth) {
-    Serial.print("Inside: ");
-    Serial.println(m_buffer);
     // Remove trailing comma if present
     trimSeparator(m_buffer);
     // Handle each object type

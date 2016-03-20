@@ -448,18 +448,13 @@ static bool wifiConnect(const char *cszSSID, const char *cszPassword) {
   int attempts = 3;
   while (attempts) {
     int status;
-    Serial.print("Attempting to connect to ");
-    Serial.println(cszSSID);
     if(strlen(cszPassword)==0)
       status = WiFi.begin(cszSSID);
     else
       status = WiFi.begin(cszSSID, cszPassword);
-    if(status==WL_CONNECTED) {
-      Serial.println("Connection succeeded");
+    if(status==WL_CONNECTED)
       return true;
-      }
-    // Wait 5 seconds for the next attempt
-    Serial.println("Connection failed");
+    // Wait 10 seconds for the next attempt
     if(--attempts) // Wait before next attempt
       delay(10000);
     }
@@ -483,8 +478,6 @@ static void wifiAccessPoint() {
     exists = false;
     for (int i=0; i<n; i++) {
       String ssid = WiFi.SSID(i);
-      Serial.print("Found SSID ");
-      Serial.println(ssid);
       if(strcmp(szSSID, ssid.c_str())==0)
         exists = true;
       }
@@ -568,12 +561,10 @@ void handleConfig() {
       IotConfig.onConfigChange();
     }
   builder.end();
-  Serial.println(builder.getResult());
   httpServer.send(200, "application/json", builder.getResult());
   }
 
 void handleDefault() {
-  Serial.println("Got main page request");
   httpServer.send_P(200, PSTR("text/html"), CONFIG_PAGE);
   }
 
