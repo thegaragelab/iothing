@@ -532,8 +532,8 @@ void handleConfig() {
   if(httpServer.method() == HTTP_POST) {
     // Process the configuration
     if (httpServer.hasArg("plain")) {
-      JsonToken tokens[8];
-      JsonParser parser(tokens, 8);
+      JsonToken tokens[16];
+      JsonParser parser(tokens, 16);
       String json = httpServer.arg("plain");
       int count = parser.parse(json.c_str());
       if(count > 0) {
@@ -552,6 +552,8 @@ void handleConfig() {
           EEPROM.commit();
           }
         }
+      else
+        status = false;
       }
     }
   // Build the response with the current values
