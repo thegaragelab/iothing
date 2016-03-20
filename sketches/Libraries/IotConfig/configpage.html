@@ -66,7 +66,7 @@
           document.getElementById(hidden[i]).style.display = "none";
         }
       }
-      
+
     function onConfig(values) {
       document.getElementById("ssid").value = values["ssid"] || "";
       showSection("config");
@@ -85,7 +85,7 @@
         }
       return null;
       }
-      
+
     function saveChanges() {
       // Get the config from the form
       var result = { }
@@ -107,7 +107,7 @@
       xmlHttp.setRequestHeader("Content-type", "application/json");
       xmlHttp.send(JSON.stringify(result));
       }
-    
+
     function showPassword() {
       var cb = document.getElementById("show");
       var pw = document.getElementById("password");
@@ -118,7 +118,7 @@
         pw.type = "password";
         }
       }
-    
+
     function readConfig() {
       var url = "http://" + location.hostname + (location.port ? ':' + location.port : '') + "/config";
       var xmlHttp = new XMLHttpRequest();
@@ -142,7 +142,7 @@
     An error occurred while communicating with the device. Please refresh the page to try again.
   </div>
   <div id="finished">
-    The configuration has been updated. The device should restart in a few moments.
+    The configuration has been updated - please restart the device to apply changes.
   </div>
   <div id="config">
     <p>
